@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=1:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --exclusive
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+# For all files:
+multiqc *_fastqc.zip --filename multiqc_afterTrimGal_all
+
+# For all paired files:
+multiqc *_val_[12]_fastqc.zip --filename multiqc_afterTrimGal_paired
+
+#For all OLD unpaired files:
+multiqc *R[12]_001.T1.fq.unpaired_trimmed_fastqc.zip --filename multiqc_afterTrimGal_unpaired1
+
+# For all NEW unpaired files:
+multiqc *_unpaired_[12]_fastqc.zip --filename multiqc_afterTrimGal_unpaired2
+
+
+

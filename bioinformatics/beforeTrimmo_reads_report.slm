@@ -1,0 +1,32 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=4:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --exclusive
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+
+# Create the output file and write the header
+output_file="beforeTrimmo_reads_report.txt"
+echo -e "SampleId\tInitial" > "$output_file"
+
+# Loop through all .gz files in the current directory
+for input_file in *.fastq.gz; do
+    # Extract SampleId from filename (removing the .fastq.gz part)
+    sample_id=$(basename "$input_file" .fastq.gz) # This removes the extension
+
+    # Count raw reads (before running Trimmomatic and TrimGalore)
+    initial_reads=$(zcat "$input_file" | awk 'NR%4==1 {count++} END {print count}')
+
+    # Append the SampleId and Initial read count to the output file
+    echo -e "$sample_id\t$initial_reads" >> "$output_file"
+done
+
+echo "Reads report generated in $output_file"

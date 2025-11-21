@@ -1,0 +1,36 @@
+#!/bin/bash
+#SBATCH --account=ckenkel_26
+#SBATCH --time=4:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+
+# Create the output file and write the header
+output_file="afterTrimmo_reads_report.txt"
+echo -e "SampleId\tafterTrimmo" > "$output_file"
+
+# Loop through all .fq.unpaired and .fq files in the current directory
+for input_file in *.fq.unpaired *.fq; do
+    # Check if the file exists to avoid errors if no matching files are found
+    [ -e "$input_file" ] || continue
+
+    # Extract SampleId from filename (removing the .T1 and .fq part)
+    sample_id=$(basename "$input_file" .fq) # Remove .fq
+    sample_id=${sample_id%.T1} # Remove .T1 if it exists
+
+    # Count reads in the file
+    after_trimmo_reads=$(awk 'NR%4==1 {count++} END {print count}' "$input_file")
+
+    # Debugging output
+    echo "Processed $input_file: $after_trimmo_reads reads counted."
+
+    # Append the SampleId and read count to the output file
+    echo -e "$sample_id\t$after_trimmo_reads" >> "$output_file"
+done
+
+echo "After trimming reads report generated in $output_file"

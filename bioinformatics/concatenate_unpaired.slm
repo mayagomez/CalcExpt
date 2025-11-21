@@ -1,0 +1,36 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-10
+#SBATCH --account=ckenkel_26
+#SBATCH --time=24:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --exclusive
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+# Written with assistance from ChatGPT
+
+
+# Loop through all unique sample IDs in the current directory
+for sample in $(ls *_unpaired_*.fq | cut -d'_' -f1 | sort | uniq); do
+
+  # Find all files with the sample ID and the keyword "unpaired"
+  unpaired_files=$(ls ${sample}_*unpaired*.fq)
+  
+  # Check if there are exactly 4 unpaired files for the sample
+  if [ $(echo "$unpaired_files" | wc -l) -eq 4 ]; then
+
+    # Concatenate the files into one output file
+    output_file="${sample}_unpaired_all.fq"
+    cat $unpaired_files > $output_file
+    
+    # Print a message indicating the process is done for the sample
+    echo "Concatenated files for sample ${sample} into ${output_file}"
+
+  else
+    echo "Warning: Expected 4 unpaired files for sample ${sample}, but found $(echo "$unpaired_files" | wc -l)"
+  fi
+done
