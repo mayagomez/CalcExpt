@@ -1,0 +1,53 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=48:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+# Script is influenced by: Ruiqi Li https://docs.google.com/document/d/1Z8JAi1jQbMUh-hHwv-OpePuvX54ewGzPS8D4ajMPCSc/edit?tab=t.0
+
+
+# Load samtools conda environment:
+module purge
+eval "$(conda shell.bash hook)"
+conda activate featurecounts_env
+
+# To make sure that featureCounts is loading properly, run the following:
+featureCounts -v
+
+
+
+# Set Variables:
+NTHREADS=${SLURM_CPUS_PER_TASK}
+BAMDIR=/scratch1/migomez/CalcExpt/bioinfo/trimmed/trimmed2/hisat2_output/samtools_output
+OUTDIR=/scratch1/migomez/CalcExpt/bioinfo/trimmed/trimmed2/hisat2_output/samtools_output/featureCounts_output
+REF_GTF=/project2/ckenkel_26/RefSeqs/Acer_Genome_Sanger/annotations_Locatelli/SangerAcer_cat_ReichSfitti.gtf
+STRAND=0   # 0=unstranded ---- set based on your library
+
+
+
+cd "$BAMDIR"
+
+# Run featureCounts all paired BAM files:
+featureCounts -a "$REF_GTF" -t exon -g gene_id -Q 10 -s $STRAND -p -B -T $NTHREADS -o "$OUTDIR/paired.counts.txt" *_paired.bam
+
+# Run featureCounts all unpaired BAM files:
+featureCounts -a "$REF_GTF" -t exon -g gene_id -Q 10 -s $STRAND -T $NTHREADS -o "$OUTDIR/unpaired.counts.txt" *_unpaired.bam
+
+
+
+# Flags:
+# -g: gene_id or transcript_id
+# -Q: filters out MAPQ scores of 10 and lower
+
+# -p:  specifies that it is paired end data
+# -B requires both mates are aligned to the genome before counting that pair
+

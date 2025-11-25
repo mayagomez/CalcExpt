@@ -1,0 +1,105 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=2:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=16GB
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+
+# Move to working directory:
+cd /scratch1/migomez/CalcExpt/bioinfo/trimmed/trimmed2/hisat2_output/samtools_output/featureCounts_output
+
+
+
+# 1. Remove the program header line.
+tail -n +2 paired.counts.txt > paired.clean.txt
+tail -n +2 unpaired.counts.txt > unpaired.clean.txt
+
+
+# 2. Convert the paired and unpaired dataframes to long format:
+
+## Apply to the paired df
+awk -F'\t' '
+BEGIN { OFS="\t" }
+
+NR==1 {
+    print "GeneID","Chr","Start","End","Strand","Length","SampleID","Count","Pairedness"
+    for (i=7;i<=NF;i++) sample[i]=$i
+    next
+}
+
+{
+    for (i=7;i<=NF;i++) {
+
+        s = sample[i]
+
+        gsub(".bam$", "", s)         # remove .bam
+        gsub("_paired$", "", s)      # remove _paired
+
+        print $1,$2,$3,$4,$5,$6, s, $i, "paired"
+    }
+}
+' paired.clean.txt > paired.long.tsv
+
+
+## Apply to the unpaired df
+awk -F'\t' '
+BEGIN { OFS="\t" }
+
+NR==1 {
+    print "GeneID","Chr","Start","End","Strand","Length","SampleID","Count","Pairedness"
+    for (i=7;i<=NF;i++) sample[i]=$i
+    next
+}
+
+{
+    for (i=7;i<=NF;i++) {
+
+        s = sample[i]
+
+        gsub(".bam$", "", s)         # remove .bam
+        gsub("_unpaired$", "", s)    # remove _unpaired
+
+        print $1,$2,$3,$4,$5,$6, s, $i, "unpaired"
+    }
+}
+' unpaired.clean.txt > unpaired.long.tsv
+
+
+
+# 3. Now merge the long paired and unpaired data!
+(head -n 1 paired.long.tsv && tail -n +2 paired.long.tsv && tail -n +2 unpaired.long.tsv) > AllCounts_hisat2.tab
+
+
+
+# 4. Separate into host and symbiont count files.
+
+# Extract the header from combined file
+tab_file="AllCounts_hisat2.tab"
+header=$(head -n 1 "$tab_file")
+
+
+# Separate rows into AllCountsSym_hisat2.tab and AllCountsHost_hisat2.tab
+
+echo "$header" > AllCountsHost_hisat2.tab
+tail -n +2 "$tab_file" | grep 'FUN' >> AllCountsHost_hisat2.tab
+
+
+echo "$header" > AllCountsSym_hisat2.tab
+tail -n +2 "$tab_file" | grep -v 'FUN' >> AllCountsSym_hisat2.tab
+
+
+
+
+# 5. Do some organizing for easy copying:
+mkdir -p copy_me
+mv AllCounts_hisat2.tab AllCountsHost_hisat2.tab AllCountsSym_hisat2.tab copy_me
+
+echo "Ready to roll!"

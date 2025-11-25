@@ -1,0 +1,55 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=48:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+
+# Script is influenced by: Ruiqi Li https://docs.google.com/document/d/1Z8JAi1jQbMUh-hHwv-OpePuvX54ewGzPS8D4ajMPCSc/edit?tab=t.0
+
+
+
+# Load samtools conda environment:
+module purge
+eval "$(conda shell.bash hook)"
+conda activate samtools_env
+
+# To make sure that samtools is loading properly, run the following:
+samtools --version
+
+# Set Variables:
+NTHREADS=${SLURM_CPUS_PER_TASK}
+DIR=/scratch1/migomez/CalcExpt/bioinfo/trimmed/trimmed2/hisat2_output
+OUTDIR=/scratch1/migomez/CalcExpt/bioinfo/trimmed/trimmed2/hisat2_output/samtools_output
+
+
+# Loop over all SAM files in the hisat2_output directory.
+for SAMFILE in "${DIR}"/*.sam; do
+    # Extract base name without extension
+    SAMPLE=$(basename "$SAMFILE" .sam)
+
+    echo "Processing $SAMPLE"
+
+    # Sort (order) reads by their position in reference genome (turn into BAM file).
+    samtools sort -@ "${NTHREADS}" -o "${OUTDIR}/${SAMPLE}.bam" "$SAMFILE"
+
+    # Index BAM for downstream analysis.
+    samtools index "${OUTDIR}/${SAMPLE}.bam"
+
+
+# Check if samtools finished successfully.
+    if [ $? -eq 0 ]; then
+      echo "Samtools finished successfully for $SAMPLE"
+    else
+      echo "Samtools encountered an error for $SAMPLE"
+    fi
+done
+

@@ -1,0 +1,64 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=2:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --exclusive
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+# Written with aid from ChatGPT.
+
+# Load packages:
+export PATH=/project/ckenkel_26/software/bbmap:$PATH
+module load jdk/17.0.5
+
+# Create the directory for histogram files if it doesn't exist
+mkdir -p histo_files
+
+# Create a new summary file
+summary_file="unpaired_summary_statistics.txt"  # Updated summary file name
+echo "SampleID Avg Std_Dev" > "$summary_file"  # Write header to the summary file
+
+# Loop through all files ending with _unpaired_all.fq in the current directory
+for in in *_unpaired_all.fq; do
+    # Check if the file exists to avoid errors
+    if [[ -f "$in" ]]; then
+        # Run the readlength.sh command with dynamic output file name
+        output_file="${in%.fq}_histogram.txt"
+        readlength.sh in="$in" out="$output_file"
+
+        # Check if the command was successful
+        if [[ $? -eq 0 ]]; then
+            # Move the histogram file to the histo_files directory
+            mv "$output_file" histo_files/
+
+            # Extract SampleID from the filename
+            sample_id="${in%-unpaired_all.fq}"  # Extract SampleID
+
+            # Extract Avg and Std_Dev from the histogram file
+            avg=$(grep "^#Avg:" "histo_files/$output_file" | awk '{print $2}')       # Extract Avg
+            std_dev=$(grep "^#Std_Dev:" "histo_files/$output_file" | awk '{print $2}')  # Extract Std_Dev
+
+            # Write the SampleID, Avg, and Std_Dev to the summary file
+            echo "$sample_id $avg $std_dev" >> "$summary_file"
+
+            # Log success
+            echo "Successfully processed: $in"
+        else
+            # Write an error message if the command failed
+            echo "Failed to process: $in" >&2
+        fi
+    fi
+done
+
+
+
+
+# For a single file you can do this:
+#in="7-O_unpaired_all.fq"
+#readlength.sh in="$in" out="${in%.fq}_histogram.txt"

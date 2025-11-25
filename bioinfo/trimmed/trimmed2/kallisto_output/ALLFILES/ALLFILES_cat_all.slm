@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=12:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --exclusive
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+
+# 1. Concatenate all files together
+
+# Initialize the combined TSV file
+combined_file="AllCounts.tab"
+
+# Get the header from the first .tsv file and write it to the combined TSV file
+header_file=$(ls *.tsv | head -n 1)
+if [ -n "$header_file" ]; then
+    head -n 1 "$header_file" > "$combined_file"
+else
+    echo "Error: No .tsv files found in the directory."
+    exit 1
+fi
+
+# Append the content of all .tsv files (excluding headers) to the combined TSV file
+for file in *.tsv; do
+    if [ "$file" != "$combined_file" ]; then
+        tail -n +2 "$file" >> "$combined_file"
+        echo "Successfully concatenated $file"
+    fi
+done
+
+
+
+# 2. Convert combined TSV file to TAB format
+tab_file="AllCounts.tab"
+cp "$combined_file" "$tab_file"
+
+# Display success message for TAB conversion
+echo "Conversion to TAB successful: $tab_file"
+
+
+
+
+
+# 3. Separate out the host and symbiont counts
+
+# Extract header from combined file
+header=$(head -n 1 "$tab_file")
+
+# Separate rows into AllCountsSym.tab and AllCountsHost.tab based on 'target_id' column
+grep 'Sfitti' "$tab_file" > "AllCountsSym.tab"
+grep -v 'Sfitti' "$tab_file" > "AllCountsHost.tab"
+
+# Add header to AllCountsSym.tab
+echo "$header" > "AllCountsSym.tab.tmp"
+cat "AllCountsSym.tab" >> "AllCountsSym.tab.tmp"
+mv "AllCountsSym.tab.tmp" "AllCountsSym.tab"
+
+# Display success message for separation
+echo "Separation into AllCountsSym.tab and AllCountsHost.tab successful."

@@ -1,0 +1,32 @@
+#!/bin/bash
+#SBATCH --partition=oneweek
+#SBATCH --nodelist=d05-07
+#SBATCH --account=ckenkel_26
+#SBATCH --time=1:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=16GB
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+
+
+# Script is influenced by: https://github.com/rsavary/Fast-and-pervasive-transcriptomic-resilience/blob/master/01_Scripts/01_fastqc_script.sh
+# Info here: https://pachterlab.github.io/kallisto/manual
+
+
+# Load kallisto conda environment:
+module purge
+eval "$(conda shell.bash hook)"
+conda activate /project/ckenkel_26/condaEnvs/kallisto
+
+
+# To make sure that kallisto is loading properly, run the following:
+kallisto version
+
+
+# Build Kallisto index from reference transcriptome
+kallisto index -i /project/ckenkel_26/RefSeqs/AcerGenome/2023update/Combined_Acer_Symfitti_kallisto.idx /project/ckenkel_26/RefSeqs/AcerGenome/2023update/Combined_Acer_Symfitti_transcripts.fa

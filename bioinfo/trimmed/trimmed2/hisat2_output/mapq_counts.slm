@@ -1,0 +1,21 @@
+#!/bin/bash
+#SBATCH --partition=meb_largemem
+#SBATCH --nodelist=b01-11
+#SBATCH --account=ckenkel_26
+#SBATCH --time=10:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+
+
+
+
+cd /scratch1/migomez/CalcExpt/bioinfo/trimmed/trimmed2/hisat2_output
+
+for f in *.sam; do awk -v s="$f" '$1!~/^@/{cnt[$5]++} END{for(q in cnt) print s, q, cnt[q]}' "$f"; done > mapq_counts.tsv
+
+
