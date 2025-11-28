@@ -36,18 +36,17 @@ STRAND=0   # 0=unstranded ---- set based on your library
 
 cd "$BAMDIR"
 
-# Run featureCounts all paired BAM files:
-featureCounts -a "$REF_GTF" -t exon -g gene_id -Q 10 -s $STRAND -p -B -T $NTHREADS -o "$OUTDIR/paired.counts.txt" *_paired.bam
+# Run featureCounts all BAM files (paired and unpaired):
+# featureCounts is designed to handle paired and unpaired simultaneously. DO not run paired and unpaired counts as separate commands.
 
-# Run featureCounts all unpaired BAM files:
-featureCounts -a "$REF_GTF" -t exon -g gene_id -Q 10 -s $STRAND -T $NTHREADS -o "$OUTDIR/unpaired.counts.txt" *_unpaired.bam
+featureCounts -a "$REF_GTF" -t exon -g gene_id -Q 10 -s $STRAND -p -T $NTHREADS -o "$OUTDIR/paired.counts.txt" *.bam
+
 
 
 
 # Flags:
-# -g: gene_id or transcript_id
-# -Q: filters out MAPQ scores of 10 and lower
-
-# -p:  specifies that it is paired end data
-# -B requires both mates are aligned to the genome before counting that pair
+# g: gene_id or transcript_id
+# -Q: filters out MAPQ scores of 10 and lower (though we only have MAPQ of 60, 1 and 0 from our k of 2 when aligning.
+# -p:  specifies that there will be paired end data
+# -B requires that both mates are aligned to the genome before counting that pair --- DO NOT INCLUDE because we have unpaired data too.
 
