@@ -1,0 +1,15 @@
+black
+blue
+brown
+cyan
+green
+greenyellow
+grey60
+lightcyan
+magenta
+midnightblue
+pink
+purple
+red
+salmon
+tan

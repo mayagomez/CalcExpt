@@ -1,0 +1,45 @@
+#!/bin/bash
+#SBATCH --account=ckenkel_26
+#SBATCH --partition=meb_largemem
+#SBATCH --job-name=GO_MWU
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=16G
+#SBATCH --time=06:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=migomez@usc.edu
+#SBATCH --output=GO_MWU_%A_%a.out
+#SBATCH --error=GO_MWU_%A_%a.err
+#SBATCH --array=1-15
+
+
+# Load requirements:
+module purge
+module load rstats/4.5.1
+module load perl
+
+
+# Base directory
+BASE_DIR="/scratch1/migomez/CalcExpt/GO_MWU_Deepsplit2"
+cd "$BASE_DIR" || exit 1
+
+echo "SLURM Job ID: $SLURM_JOB_ID"
+echo "Array Task ID: $SLURM_ARRAY_TASK_ID"
+
+# Get module (directory name)
+MODULE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" module_directories_torun.txt)
+
+echo "Running module: $MODULE"
+
+# Move into module directory
+cd "$BASE_DIR/$MODULE" || exit 1
+
+# Find the CSV (only one per folder)
+INPUT=$(ls merged_hostGO_MM_MWU_*_numeric.csv)
+
+echo "Input file: $INPUT"
+
+# Run GO_MWU (BP, MF, or CC)
+Rscript GO_MWU_CC.R "$INPUT"
+
+echo "Finished module: $MODULE"
